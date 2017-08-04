@@ -583,6 +583,7 @@
 
     /**
      * Helper function to look for valid element between save/restore state in path only operations (e.g. stroke, fill)
+     * This tries to handle situations where stroke or fill are called between a save and restore
      * @private
      */
     ctx.prototype.__operatesOnPathOnly = function(callback) {
@@ -1072,9 +1073,21 @@
             clipPath = this.__createElement("clipPath"),
             id =  randomString(this.__ids),
             newGroup = this.__createElement("g");
+        
+        var startElement = this.__currentElement;
+
+        // If we start from a group (save/restore) then we want to apply the clipping path to this group
+        if (startElement === group) {
+            if(!this.__lastPreSavePathElement) {
+                return;
+            }
+            this.__currentElement = this.__lastPreSavePathElement;
+            this.__lastPreSavePathElement.parentElement.removeChild(this.__lastPreSavePathElement)
+        } else {
+            group.removeChild(this.__currentElement);
+        }
 
         this.__applyCurrentDefaultPath();
-        group.removeChild(this.__currentElement);
         clipPath.setAttribute("id", id);
         clipPath.appendChild(this.__currentElement);
 
@@ -1165,7 +1178,14 @@
             svgImage.setAttribute("height", dh);
             svgImage.setAttribute("preserveAspectRatio", "none");
 
-            if (sx || sy || sw !== image.width || sh !== image.height) {
+            if (this.enableMirroring) {
+                canvas = this.__document.createElement("canvas");
+                canvas.width = sw;
+                canvas.height = sh;
+                context = canvas.getContext("2d");
+                context.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh);
+                image = canvas;
+            } else if (sx || sy || sw !== image.width || sh !== image.height) {
                 //crop the image using a temporary canvas
                 canvas = this.__document.createElement("canvas");
                 canvas.width = dw;
@@ -1194,6 +1214,16 @@
             img = this.__document.createElementNS("http://www.w3.org/2000/svg", "image");
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
+
+            if (this.enableMirroring) {
+                canvas = this.__document.createElement("canvas");
+                canvas.width = image.width;
+                canvas.height = image.height;
+                context = canvas.getContext("2d");
+                context.drawImage(image, 0, 0);
+                image = canvas;
+            }
+
             img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
                 image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
             pattern.appendChild(img);
