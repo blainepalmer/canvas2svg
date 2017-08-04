@@ -1,5 +1,5 @@
 {
     "name": "canvas2svg",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "main": "./canvas2svg.js"
 }

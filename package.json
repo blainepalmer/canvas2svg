@@ -1,6 +1,6 @@
 {
   "name": "canvas2svg-visjs",
-  "version": "1.0.19.1",
+  "version": "1.0.20",
   "description": "canvas2svg visjs mod",
   "main": "canvas2svg.js",
   "homepage": "http://gliffy.github.io/canvas2svg/",
