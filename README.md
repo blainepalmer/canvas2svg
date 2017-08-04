@@ -124,6 +124,7 @@ Updates
 Misc
 ==========
 Some canvas 2d context methods are not implemented yet. Watch out for setTransform and arcTo.
+This unofficial modification is to begin adding support for visjs
 
 Releasing
 =========

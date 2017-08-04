@@ -470,6 +470,8 @@
         var parent = this.__closestGroupOrSvg();
         this.__groupStack.push(parent);
         parent.appendChild(group);
+        if(this.__currentElement && this.__currentElement.nodeName === "path")
+            this.__lastPreSavePathElement = this.__currentElement;
         this.__currentElement = group;
         this.__stack.push(this.__getStyleState());
     };
@@ -483,6 +485,7 @@
         if (!this.__currentElement) {
             this.__currentElement = this.__root.childNodes[1];
         }
+        this.__lastPreSavePathElement = null;
         var state = this.__stack.pop();
         this.__applyStyleState(state);
     };
@@ -577,6 +580,21 @@
 			console.error("Attempted to apply path command to node", currentElement.nodeName);
         }
     };
+
+    /**
+     * Helper function to look for valid element between save/restore state in path only operations (e.g. stroke, fill)
+     * @private
+     */
+    ctx.prototype.__operatesOnPathOnly = function(callback) {
+        if(this.__lastPreSavePathElement && this.__currentElement.nodeName && this.__currentElement.nodeName === "g") {
+            var currentElement = this.__currentElement;
+            this.__currentElement = this.__lastPreSavePathElement;
+            callback.call(this);
+            this.__currentElement = currentElement;
+        } else {
+            callback.call(this);
+        }
+    }
 
     /**
      * Helper function to add path command
@@ -745,22 +763,26 @@
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__currentElement.setAttribute("paint-order", "fill stroke markers");
-        }
-        this.__applyCurrentDefaultPath();
-        this.__applyStyleToCurrentElement("stroke");
+        this.__operatesOnPathOnly(function() {
+            if (this.__currentElement.nodeName === "path") {
+                this.__currentElement.setAttribute("paint-order", "fill stroke markers");
+            }
+            this.__applyCurrentDefaultPath();
+            this.__applyStyleToCurrentElement("stroke");
+        });
     };
 
     /**
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__currentElement.setAttribute("paint-order", "stroke fill markers");
-        }
-        this.__applyCurrentDefaultPath();
-        this.__applyStyleToCurrentElement("fill");
+        this.__operatesOnPathOnly(function() {
+            if (this.__currentElement.nodeName === "path") {
+                this.__currentElement.setAttribute("paint-order", "stroke fill markers");
+            }
+            this.__applyCurrentDefaultPath();
+            this.__applyStyleToCurrentElement("fill");
+        });
     };
 
     /**
